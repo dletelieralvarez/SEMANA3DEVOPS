@@ -6,7 +6,7 @@ pool:
 
 variables:
   azureSubscription: 'SC_SEMANA3' # Este es un nombre que debe cambiar al que crearon.
-  location: 'northcentralus'
+  location: 'nothcentralus'
   resourceGroupName: 'GR_SEMANA3' # Este es un nombre que debe cambiar al que crearon.
   virtualNetworkName: 'VNet-taller-DevOps'
   subnetName: 'Subnet-taller-DevOps'
@@ -51,7 +51,7 @@ steps:
       echo "Grupo de seguridad de red creado."
       az network nsg wait --resource-group $(resourceGroupName) --name $(securityGroupName) --created
 
-      # Permitir acceso a los puertos 22, 80 y icmp
+      # Permitir acceso a los puertos 22 y 80
       echo "Configurando reglas de NSG..."
       az network nsg rule create --resource-group $(resourceGroupName) --nsg-name $(securityGroupName) --name AllowSSH --protocol tcp --direction inbound --priority 1000 --source-address-prefix '*' --source-port-range '*' --destination-address-prefix '*' --destination-port-range 22 --access allow
       az network nsg rule create --resource-group $(resourceGroupName) --nsg-name $(securityGroupName) --name AllowHTTP --protocol tcp --direction inbound --priority 1001 --source-address-prefix '*' --source-port-range '*' --destination-address-prefix '*' --destination-port-range 80 --access allow
@@ -72,8 +72,20 @@ steps:
       az vm wait --resource-group $(resourceGroupName) --name $(vmName) --created
 
       # Instalar Apache y configurar la página de prueba
-       echo "Instalando Apache y configurando la página de prueba..."
-       az vm run-command invoke --resource-group $(resourceGroupName) --name $(vmName) --command-id RunShellScript --scripts "sudo apt update && sudo apt install -y apache2"
-       az vm run-command invoke --resource-group $(resourceGroupName) --name $(vmName) --command-id RunShellScript --scripts "echo 'hola curso devops hemos automatizado el despliegue de maquina virtual desde azure devops' | sudo tee /var/www/html/index.html"
-       echo "Apache instalado y página de bienvenida configurada."
+      echo "Instalando Apache y configurando la página de prueba..."
+      az vm run-command invoke --resource-group $(resourceGroupName) --name $(vmName) --command-id RunShellScript --scripts "sudo apt update && sudo apt install -y apache2"
+      
+      echo "Instalando Git en la VM..."
+      az vm run-command invoke --resource-group $(resourceGroupName) --name $(vmName) --command-id RunShellScript --scripts "sudo apt update && sudo apt install -y git"
+      echo "Clonando repo en /var/www/html..."
+      az vm run-command invoke --resource-group $(resourceGroupName) --name $(vmName) --command-id RunShellScript --scripts "sudo rm -rf /var/www/html/* && sudo git clone https://github.com/mautapiao/SEMANA3_DEVOPS.git /var/www/html && sudo rm -rf /var/www/html/.git /var/www/html/azure-pipeline.yml"
+     
+      echo "Ajustando permisos a www-data..."
+      az vm run-command invoke --resource-group $(resourceGroupName) --name $(vmName) --command-id RunShellScript --scripts "sudo chown -R www-data:www-data /var/www/html"
+      
+      echo "Reiniciando Apache..."
+      az vm run-command invoke --resource-group $(resourceGroupName) --name $(vmName) --command-id RunShellScript --scripts "sudo systemctl restart apache2"
+      echo "Aplicación desplegada y Apache reiniciado correctamente"
+    
+
 
