@@ -71,6 +71,10 @@ steps:
       echo "Máquina virtual creada."
       az vm wait --resource-group $(resourceGroupName) --name $(vmName) --created
 
+      echo "Iniciando VM..."
+      az vm start --resource-group $(resourceGroupName) --name $(vmName)
+      az vm wait --resource-group $(resourceGroupName) --name $(vmName) --started
+
       # Instalar Apache y configurar la página de prueba
       echo "Instalando Apache y configurando la página de prueba..."
       az vm run-command invoke --resource-group $(resourceGroupName) --name $(vmName) --command-id RunShellScript --scripts "sudo apt update && sudo apt install -y apache2"
@@ -87,6 +91,7 @@ steps:
       az vm run-command invoke --resource-group $(resourceGroupName) --name $(vmName) --command-id RunShellScript --scripts "sudo systemctl restart apache2"
       echo "Aplicación desplegada y Apache reiniciado correctamente"
     
+
 
 
 
