@@ -85,7 +85,17 @@ steps:
       # Instalar Apache y configurar la página de prueba
       echo "Instalando Apache y configurando la página de prueba..."
       az vm run-command invoke --resource-group $(resourceGroupName) --name $(vmName) --command-id RunShellScript --scripts "sudo apt update && sudo apt install -y apache2"
-      
+
+      # Cambiar Apache al puerto 8080
+      echo "Cambiando Apache al puerto 8080..."
+      az vm run-command invoke \
+      --resource-group $(resourceGroupName) \
+      --name $(vmName) \
+      --command-id RunShellScript \
+     --scripts "sudo sed -i 's/80/8080/g' /etc/apache2/ports.conf && \
+             sudo sed -i 's/*:80/*:8080/g' /etc/apache2/sites-enabled/000-default.conf && \
+             sudo systemctl restart apache2"
+             
       echo "Instalando Git en la VM..."
       az vm run-command invoke --resource-group $(resourceGroupName) --name $(vmName) --command-id RunShellScript --scripts "sudo apt update && sudo apt install -y git"
       echo "Clonando repo en /var/www/html..."
@@ -98,6 +108,7 @@ steps:
       az vm run-command invoke --resource-group $(resourceGroupName) --name $(vmName) --command-id RunShellScript --scripts "sudo systemctl restart apache2"
       echo "Aplicación desplegada y Apache reiniciado correctamente"
     
+
 
 
 
