@@ -5,9 +5,9 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-  azureSubscription: 'SC_SEMANA3' # Este es un nombre que debe cambiar al que crearon.
+  azureSubscription: 'SC_SEMANA3'
   location: 'northcentralus'
-  resourceGroupName: 'GR_SEMANA3' # Este es un nombre que debe cambiar al que crearon.
+  resourceGroupName: 'GR_SEMANA3'
   virtualNetworkName: 'VNet-taller-DevOps'
   subnetName: 'Subnet-taller-DevOps'
   addressPrefix: '10.0.0.0/16'
@@ -15,106 +15,103 @@ variables:
   securityGroupName: 'NSG-taller-DevOps'
   publicIpName: 'PublicIP-2-taller-DevOps'
   vmName: 'VM-2-taller-DevOps'
-  vmSize: 'Standard_B1s'  # SKU disponible en eastus2
+  vmSize: 'Standard_B1s'
   adminUsername: 'azureuser'
-  adminPassword: 'Azureuser5261'  # Contraseña en texto plano (ajustar según necesidad)
+  adminPassword: 'Azureuser5261'
 
   # Variables de la imagen
   imagePublisher: 'Canonical'
   imageOffer: '0001-com-ubuntu-server-jammy'
   imageSku: '22_04-lts-gen2'
-  imageVersion: 'latest'  # Versión específica de la imagen
+  imageVersion: 'latest'
 
 steps:
-- checkout: none  # desactiva el checkout automático del repo de DevOps
+- checkout: none
+
 - script: |
     echo "Clonando repo público..."
     git clone https://github.com/dletelieralvarez/SEMANA3DEVOPS.git
     ls -la SEMANA3DEVOPS
   displayName: 'Clonar repo público de GitHub'
-  
+
 - task: AzureCLI@2
   inputs:
     azureSubscription: $(azureSubscription)
     scriptType: 'bash'
     scriptLocation: 'inlineScript'
     inlineScript: |
-      set -e  # Termina el script si cualquier comando falla
+      set -e
 
-      # Crear un grupo de recursos
       echo "Creando grupo de recursos..."
       az group create --name $(resourceGroupName) --location "$(location)"
       echo "Grupo de recursos creado."
 
-      # Crear una red virtual con un segmento de red
       echo "Creando red virtual..."
-      az network vnet create --resource-group $(resourceGroupName) --name $(virtualNetworkName) --address-prefix $(addressPrefix) --subnet-name $(subnetName) --subnet-prefix $(subnetPrefix)
-      echo "Red virtual creada."
+      az network vnet create \
+        --resource-group $(resourceGroupName) \
+        --name $(virtualNetworkName) \
+        --address-prefix $(addressPrefix) \
+        --subnet-name $(subnetName) \
+        --subnet-prefix $(subnetPrefix)
       az network vnet wait --resource-group $(resourceGroupName) --name $(virtualNetworkName) --created
+      echo "Red virtual creada."
 
-      # Crear un grupo de seguridad de red
       echo "Creando grupo de seguridad de red..."
       az network nsg create --resource-group $(resourceGroupName) --name $(securityGroupName)
-      echo "Grupo de seguridad de red creado."
       az network nsg wait --resource-group $(resourceGroupName) --name $(securityGroupName) --created
+      echo "Grupo de seguridad de red creado."
 
-      # Permitir acceso a los puertos 22 y 80
       echo "Configurando reglas de NSG..."
       az network nsg rule create --resource-group $(resourceGroupName) --nsg-name $(securityGroupName) --name AllowSSH --protocol tcp --direction inbound --priority 1000 --source-address-prefix '*' --source-port-range '*' --destination-address-prefix '*' --destination-port-range 22 --access allow
-      az network nsg rule create --resource-group $(resourceGroupName) --nsg-name $(securityGroupName) --name AllowHTTP --protocol tcp --direction inbound --priority 1001 --source-address-prefix '*' --source-port-range '*' --destination-address-prefix '*' --destination-port-range 80 --access allow
-      az network nsg rule create --resource-group $(resourceGroupName) --nsg-name $(securityGroupName) --name AllowHTTP8080 --protocol tcp --direction inbound --priority 1002 --source-address-prefix '*' --source-port-range '*' --destination-address-prefix '*' --destination-port-range 8080 --access allow
-      az network nsg rule create --resource-group $(resourceGroupName) --nsg-name $(securityGroupName) --name AllowICMP --protocol icmp --direction inbound --priority 1003 --source-address-prefix '*' --source-port-range '*' --destination-address-prefix '*' --destination-port-range '*' --access allow
-
+      az network nsg rule create --resource-group $(resourceGroupName) --nsg-name $(securityGroupName) --name AllowHTTP8080 --protocol tcp --direction inbound --priority 1001 --source-address-prefix '*' --source-port-range '*' --destination-address-prefix '*' --destination-port-range 8080 --access allow
+      az network nsg rule create --resource-group $(resourceGroupName) --nsg-name $(securityGroupName) --name AllowICMP --protocol icmp --direction inbound --priority 1002 --source-address-prefix '*' --source-port-range '*' --destination-address-prefix '*' --destination-port-range '*' --access allow
       echo "Reglas de NSG configuradas."
 
-      # Crear una dirección IP pública
       echo "Creando IP pública..."
       az network public-ip create --resource-group $(resourceGroupName) --name $(publicIpName) --sku Standard --allocation-method Static
-      echo "IP pública creada."
       az network public-ip wait --resource-group $(resourceGroupName) --name $(publicIpName) --created
+      echo "IP pública creada."
 
-      # Crear la máquina virtual con la IP pública asignada, usando los parámetros de imagen especificados
       echo "Creando máquina virtual..."
-      az vm create --resource-group $(resourceGroupName) --name $(vmName) --image $(imagePublisher):$(imageOffer):$(imageSku):$(imageVersion) --size $(vmSize) --admin-username $(adminUsername) --admin-password $(adminPassword) --vnet-name $(virtualNetworkName) --subnet $(subnetName) --nsg $(securityGroupName) --public-ip-address $(publicIpName)
-      echo "Máquina virtual creada."
+      az vm create \
+        --resource-group $(resourceGroupName) \
+        --name $(vmName) \
+        --image $(imagePublisher):$(imageOffer):$(imageSku):$(imageVersion) \
+        --size $(vmSize) \
+        --admin-username $(adminUsername) \
+        --admin-password $(adminPassword) \
+        --vnet-name $(virtualNetworkName) \
+        --subnet $(subnetName) \
+        --nsg $(securityGroupName) \
+        --public-ip-address $(publicIpName)
       az vm wait --resource-group $(resourceGroupName) --name $(vmName) --created
-
-      echo "Iniciando VM..."
-      az vm start --resource-group $(resourceGroupName) --name $(vmName)
+      echo "Máquina virtual creada."
 
       echo "Esperando a que la VM esté en ejecución..."
       while [[ "$(az vm get-instance-view --resource-group $(resourceGroupName) --name $(vmName) --query 'instanceView.statuses[?starts_with(code, `PowerState/`)][code]' -o tsv)" != "PowerState/running" ]]; do
-      echo "VM aún no está lista, esperando 10s..."
-      sleep 10
+        echo "VM aún no está lista, esperando 10s..."
+        sleep 10
       done
       echo "VM iniciada correctamente."
-      
-      # Instalar Apache y configurar la página de prueba
-      echo "Instalando Apache y configurando la página de prueba..."
-      az vm run-command invoke --resource-group $(resourceGroupName) --name $(vmName) --command-id RunShellScript --scripts "sudo apt update && sudo apt install -y apache2"
 
-      # Cambiar Apache al puerto 8080
-      echo "Cambiando Apache al puerto 8080..."
+      echo "Instalando Apache, Git y desplegando la aplicación..."
       az vm run-command invoke \
-      --resource-group $(resourceGroupName) \
-      --name $(vmName) \
-      --command-id RunShellScript \
-     --scripts "sudo sed -i 's/80/8080/g' /etc/apache2/ports.conf && \
-             sudo sed -i 's/*:80/*:8080/g' /etc/apache2/sites-enabled/000-default.conf && \
-             sudo systemctl restart apache2"
-             
-      echo "Instalando Git en la VM..."
-      az vm run-command invoke --resource-group $(resourceGroupName) --name $(vmName) --command-id RunShellScript --scripts "sudo apt update && sudo apt install -y git"
-      echo "Clonando repo en /var/www/html..."
-      az vm run-command invoke --resource-group $(resourceGroupName) --name $(vmName) --command-id RunShellScript --scripts "sudo rm -rf /var/www/html/* && sudo git clone https://github.com/dletelieralvarez/SEMANA3DEVOPS.git /var/www/html && sudo rm -rf /var/www/html/.git /var/www/html/azure-pipeline.yml"
-     
-      echo "Ajustando permisos a www-data..."
-      az vm run-command invoke --resource-group $(resourceGroupName) --name $(vmName) --command-id RunShellScript --scripts "sudo chown -R www-data:www-data /var/www/html"
-      
-      echo "Reiniciando Apache..."
-      az vm run-command invoke --resource-group $(resourceGroupName) --name $(vmName) --command-id RunShellScript --scripts "sudo systemctl restart apache2"
-      echo "Aplicación desplegada y Apache reiniciado correctamente"
-    
+        --resource-group $(resourceGroupName) \
+        --name $(vmName) \
+        --command-id RunShellScript \
+        --scripts "
+          sudo apt update
+          sudo apt install -y apache2 git
+          sudo sed -i 's/80/8080/g' /etc/apache2/ports.conf
+          sudo sed -i 's/*:80/*:8080/g' /etc/apache2/sites-enabled/000-default.conf
+          sudo rm -rf /var/www/html/*
+          sudo git clone https://github.com/dletelieralvarez/SEMANA3DEVOPS.git /var/www/html
+          sudo rm -rf /var/www/html/.git /var/www/html/azure-pipeline.yml
+          sudo chown -R www-data:www-data /var/www/html
+          sudo systemctl restart apache2
+        "
+      echo "Aplicación desplegada y Apache reiniciado correctamente."
+
 
 
 
