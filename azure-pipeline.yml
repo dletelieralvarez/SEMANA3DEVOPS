@@ -1,6 +1,13 @@
 trigger:
 - main
 
+resources:
+  repositories:
+    - repository: githubRepo
+      type: github
+      name: dletelieralvarez/SEMANA3DEVOPS
+      endpoint: SC_SEMANA3
+
 pool:
   vmImage: 'ubuntu-latest'
 
@@ -108,6 +115,7 @@ steps:
       az vm run-command invoke --resource-group $(resourceGroupName) --name $(vmName) --command-id RunShellScript --scripts "sudo systemctl restart apache2"
       echo "Aplicación desplegada y Apache reiniciado correctamente"
     
+
 
 
 
