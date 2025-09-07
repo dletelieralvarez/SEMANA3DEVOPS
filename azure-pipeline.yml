@@ -1,12 +1,5 @@
 trigger:
-- main
-
-resources:
-  repositories:
-    - repository: githubRepo
-      type: github
-      name: dletelieralvarez/SEMANA3DEVOPS
-      endpoint: SC_SEMANA3
+- main  
 
 pool:
   vmImage: 'ubuntu-latest'
@@ -33,6 +26,13 @@ variables:
   imageVersion: 'latest'  # Versión específica de la imagen
 
 steps:
+- checkout: none  # desactiva el checkout automático del repo de DevOps
+- script: |
+    echo "Clonando repo público..."
+    git clone https://github.com/dletelieralvarez/SEMANA3DEVOPS.git
+    ls -la SEMANA3DEVOPS
+  displayName: 'Clonar repo público de GitHub'
+  
 - task: AzureCLI@2
   inputs:
     azureSubscription: $(azureSubscription)
@@ -115,6 +115,7 @@ steps:
       az vm run-command invoke --resource-group $(resourceGroupName) --name $(vmName) --command-id RunShellScript --scripts "sudo systemctl restart apache2"
       echo "Aplicación desplegada y Apache reiniciado correctamente"
     
+
 
 
 
