@@ -55,7 +55,8 @@ steps:
       echo "Configurando reglas de NSG..."
       az network nsg rule create --resource-group $(resourceGroupName) --nsg-name $(securityGroupName) --name AllowSSH --protocol tcp --direction inbound --priority 1000 --source-address-prefix '*' --source-port-range '*' --destination-address-prefix '*' --destination-port-range 22 --access allow
       az network nsg rule create --resource-group $(resourceGroupName) --nsg-name $(securityGroupName) --name AllowHTTP --protocol tcp --direction inbound --priority 1001 --source-address-prefix '*' --source-port-range '*' --destination-address-prefix '*' --destination-port-range 80 --access allow
-      az network nsg rule create --resource-group $(resourceGroupName) --nsg-name $(securityGroupName) --name AllowICMP --protocol icmp --direction inbound --priority 1002 --source-address-prefix '*' --source-port-range '*' --destination-address-prefix '*' --destination-port-range '*' --access allow
+      az network nsg rule create --resource-group $(resourceGroupName) --nsg-name $(securityGroupName) --name AllowHTTP8080 --protocol tcp --direction inbound --priority 1002 --source-address-prefix '*' --source-port-range '*' --destination-address-prefix '*' --destination-port-range 8080 --access allow
+      az network nsg rule create --resource-group $(resourceGroupName) --nsg-name $(securityGroupName) --name AllowICMP --protocol icmp --direction inbound --priority 1003 --source-address-prefix '*' --source-port-range '*' --destination-address-prefix '*' --destination-port-range '*' --access allow
 
       echo "Reglas de NSG configuradas."
 
@@ -97,6 +98,7 @@ steps:
       az vm run-command invoke --resource-group $(resourceGroupName) --name $(vmName) --command-id RunShellScript --scripts "sudo systemctl restart apache2"
       echo "Aplicación desplegada y Apache reiniciado correctamente"
     
+
 
 
 
